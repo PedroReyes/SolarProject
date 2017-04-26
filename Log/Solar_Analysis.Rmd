@@ -1,0 +1,37 @@
+---
+title: "Solar Project Log"
+output:
+  pdf_document: default
+  html_notebook: default
+---
+
+## Goal
+The purpose of this project is the initial creation of a tool which can help us to visualize solar data and to get a bigger understanding about solar behavior. Afterwards with the knowledge acquired just using raw data we will pass to the development of an IPS forecaster that predicts either a IPS will arrive to Earth or not. Once we have this we will decide either to create an IPS forecaster that provides also the elapsed time between the CME event and the IPS arrival or we will try to enhance the IPS forecaster (the one that says if the IPS arrives or not to Earth) using solar images with ultraviolet filter.
+
+## Important features
+
+From [NASA web page about CME descriptions](http://www.swpc.noaa.gov/phenomena/coronal-mass-ejections) we have the next claims about how to predict IPS:
+
+* Regions associated with sunspots: we would need images about these regions but as a first insight into this data we will just use the sunspot number provided by [SILSO](http://sidc.oma.be/silso/)
+* CMEs are often accompained by large solar flares
+* CMEs that are traveling faster than the solar wind plasma’s fast mode wave speed (the space equivalent of the Earth’s sound speed) will generate a shock wave
+* Often, the first sign of a CME hitting the Earth environment is the plasma density jump due to the shock wave’s passage.
+* The size, speed, direction, and density of a CME are important parameters to determine when trying to predict if and when it will impact Earth.
+
+## Initial data treatment
+
+Data treatment for solar flares:
+
+* Solar flare classification is being transformed into doubles. Now A=0, B=10, C=20, M=30, X=40. So for instance if we have M4.5, the conversion will be 34.5. 
+
+* There is an outlier with a longitude equals to -634, which flares is dated in 2013-10-28T02:12Z. This flare is clearly an outlier that cannot be useful for the development of a model and that is why it will be set a constraints which says that flares which latitude or longitude greater than 230 will be removed. We establish this threshold since we initially think that is more than enough for a flare which producs a CME to reach the Earth in form of an IPS.
+
+<!-- After this conversions the numbers are divided by 50 for normalizing the data. The most powerful solar flare up to now measured has been X45 and hence, the number should be 85. Nevetheless, this is an exception and that's why we choose this value with the purpose of normalizing as much as possible most of the data. -->
+
+Data treatment for CMEs:
+
+* CMEs with latitude or longitude equals to null have been removed.
+
+Data treatment for IPSs:
+
+* Nothing yet
