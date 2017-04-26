@@ -23,7 +23,6 @@ treating_ips_raw_data <- function(data) {
 
   # Treating data (if necessary)
   # ---------------------------
-  # everything is right
 
   return (data)
 }
@@ -223,6 +222,7 @@ get_solar_data <- function(type_data,
                            end_date,
                            return_data_treated = TRUE,
                            get_data_from_local = TRUE) {
+  print("Good game!")
   # Library for detecting chars in strings
   if(!require(stringi)){
     install.packages("stringi")
