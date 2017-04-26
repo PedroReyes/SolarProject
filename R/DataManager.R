@@ -23,6 +23,7 @@ treating_ips_raw_data <- function(data) {
 
   # Treating data (if necessary)
   # ---------------------------
+  # everything is right
 
   return (data)
 }
