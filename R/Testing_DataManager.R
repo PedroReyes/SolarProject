@@ -9,7 +9,7 @@ if(FALSE){
     type_data = data_types.IPS,
     # datapath = "/Users/pedro/Google Drive/Desarrollo/ResearchBook/Solar_Dashboard/SolarProject/Data/",
     datapath = paste(getwd(), "/Data/", sep = ""),
-    start_date = "2010-01-01",
+    start_date = "2017-01-01",
     end_date = "2017-06-01",
     return_data_treated = TRUE,
     get_data_from_local = FALSE

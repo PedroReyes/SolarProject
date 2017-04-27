@@ -246,13 +246,10 @@ get_solar_data <- function(type_data,
   current_time = format(Sys.time(), "%Y-%m-%dT%H:%MZ")
 
   # Constraint: the end date cannot be further than the current time
-  print(end_date_format_conversion)
-  print(current_time)
   if(compare_dates(as.character(end_date_format_conversion), d_format, current_time, d_format)>=0){
     end_date = Sys.Date()
     end_date_format_conversion <- paste(end_date, "T00:00Z",sep = "")
   }
-  print(end_date)
 
   # Library for detecting chars in strings
   if(!require(stringi)){
