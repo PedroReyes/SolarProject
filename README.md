@@ -9,3 +9,9 @@ After following the tutorial I just installed the package in RStudio using the n
 * install.packages("devtools") 
 * library(devtools)
 * install_github('SolarProject','PedroReyes')
+
+If any change is introduced into the code of the package the next commands must be followed:
+
+* Commit the new changes
+* Push the code into the github repository
+* Use again the install_github_command

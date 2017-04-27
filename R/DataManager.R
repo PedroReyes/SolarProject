@@ -40,17 +40,25 @@ treating_cme_raw_data <- function(data) {
   # Reordering columns
   # data = data[, c("eventTime", "location")]
 
+  # New column: sourceLocation
+  new_column_source_location = "sourceLocation"
+
   # 1- Treating data (columns lat and lon will be converted to sourceLocation)
   remove_rows <- c()
   counter <- 1
 
   for(row_index in 1:nrow(data)){
+    # Checking that the index is right
+    if(nrow(data)==0){
+      break # no data
+    }
+
     # 2- Treating data (when lat or lon are null, the entire row will be removed for the sake of data)
     if(stri_detect_fixed(data[row_index, "lat"],c("null"))
        || stri_detect_fixed(data[row_index, "lon"],c("null"))){
       remove_rows[counter] <- -row_index
       counter <- counter + 1
-      data[row_index,"sourceLocaiton"] = ""
+      data[row_index, new_column_source_location] = ""
       next
     }
 
@@ -63,7 +71,7 @@ treating_cme_raw_data <- function(data) {
     lon = ifelse(lon>0, paste("E", lon, sep = ""), paste("W", abs(lon), sep = ""))
 
     # 1- Saving helio-location
-    data[row_index,"sourceLocaiton"] = paste(lat, lon, sep = "")
+    data[row_index, new_column_source_location] = paste(lat, lon, sep = "")
   }
 
   # Removing rows that didn't pass the screen
@@ -94,6 +102,11 @@ treating_flr_raw_data <- function(data) {
   class_type_conversion_column_name = "classTypeNumber"
 
   for(row_index in 1:nrow(data)){
+    # Checking that the index is right
+    if(nrow(data)==0){
+      break # no data
+    }
+
     # Location
     location = as.character(source_location[row_index,1])
 
@@ -222,7 +235,25 @@ get_solar_data <- function(type_data,
                            end_date,
                            return_data_treated = TRUE,
                            get_data_from_local = TRUE) {
-  print("Good game!")
+  # Getting the specified date format that will be used for backup
+  d_format <- "%Y-%m-%dT%H:%MZ"
+
+  # Formatting start and end date that does not indicate time, just date
+  start_date_format_conversion <- paste(start_date, "T00:00Z",sep = "")
+  end_date_format_conversion <- paste(end_date, "T00:00Z",sep = "")
+
+  # Getting current time
+  current_time = format(Sys.time(), "%Y-%m-%dT%H:%MZ")
+
+  # Constraint: the end date cannot be further than the current time
+  print(end_date_format_conversion)
+  print(current_time)
+  if(compare_dates(as.character(end_date_format_conversion), d_format, current_time, d_format)>=0){
+    end_date = Sys.Date()
+    end_date_format_conversion <- paste(end_date, "T00:00Z",sep = "")
+  }
+  print(end_date)
+
   # Library for detecting chars in strings
   if(!require(stringi)){
     install.packages("stringi")
@@ -240,8 +271,7 @@ get_solar_data <- function(type_data,
   cme_filename = "CME_data_treated.csv"
   solar_flare_filename = "SolarFlare_data_treated.csv"
 
-  # Create the directory where the data
-  # will be saved if it does not exist
+  # Create the directory where the data will be saved if it does not exist
   if (!file.exists(datapath)){
     dir.create(datapath)
   }
@@ -286,15 +316,32 @@ get_solar_data <- function(type_data,
     return (NULL)
   }
 
+  # We have added when saving to local file two columns to the data for knowing which are
+  # the farest start and end date:
+  # One column for the farest start date
+  new_column_name_farest_start_date = "farestStartDate"
+  farest_start_date = NULL
+  if(new_column_name_farest_start_date %in% colnames(data_backup)){
+    # Getting the farest start date (if any was already saved)
+    farest_start_date = as.character(data_backup[1, new_column_name_farest_start_date])
+
+    # Removing the column
+    data_backup = data_backup[, -which(names(data_backup) %in% c(new_column_name_farest_start_date))]
+  }
+
+  # One column for the farest end date
+  new_column_name_farest_end_date = "farestEndDate"
+  farest_end_date = NULL
+  if(new_column_name_farest_end_date %in% colnames(data_backup)){
+    # Getting the farest end date (if any was already saved)
+    farest_end_date = as.character(data_backup[1, new_column_name_farest_end_date])
+
+    # Removing the column
+    data_backup = data_backup[, -which(names(data_backup) %in% c(new_column_name_farest_end_date))]
+  }
+
   # Getting data either from local or from the server, depending on what you specified
   if (get_data_from_local) {
-    # Getting the specified data from babakcup
-    d_format <- "%Y-%m-%dT%H:%MZ"
-
-    # Formatting start and end date that does not indicate time, just date
-    start_date_format_conversion <- paste(start_date, "T00:00Z",sep = "")
-    end_date_format_conversion <- paste(end_date, "T00:00Z",sep = "")
-
     # Selecting the rows that are in range
     if (type_data == data_types.IPS) {
       rows_in_range = (compare_dates(as.character(data_backup$eventTime), d_format, start_date_format_conversion, d_format)>=0 &
@@ -320,6 +367,41 @@ get_solar_data <- function(type_data,
       data_backup_treated = treating_flr_raw_data(data = data_backup_in_range)
     } else if (type_data == data_types.CME){
       data_backup_treated = treating_cme_raw_data(data = data_backup_in_range)
+    }
+
+    # It is possible that if we have no data is because we didn't download anything yet
+    # for that range of time. If that is the case we don't loose anything trying to get
+    # something from the server.
+    # WARNING! The next conditions do not take into account the case in which data between
+    # two period of times have not been before request from. For example, lets say we have
+    # requested from server the periods d1-d2 and d4-5. Then the period d2-d4 will be taken
+    # as if it is already stored locally when it is not.
+    if(compare_dates(as.character(farest_start_date), d_format, start_date_format_conversion, d_format)<=0
+       && compare_dates(as.character(farest_end_date), d_format, end_date_format_conversion, d_format)>=0){
+      # We have already request data from server in this period of time so
+      # there is no need for searching in the server
+    }else{
+      # Displaying that an extra operation, not initially established
+      # in the parameters of the functions is going to be carried out
+      print("No data available for some part of the period established, possibly because we didn't search in this time period yet. Executing automatic search...")
+
+      # Searching automatically in the range of time that has not been searched before
+      if(!(compare_dates(as.character(farest_start_date), d_format, start_date_format_conversion, d_format)<=0)){
+        data_backup_treated = get_solar_data(type_data = type_data, datapath = datapath,
+                                             start_date = start_date, end_date = substr(farest_start_date, start = 1, stop = 10),
+                                             return_data_treated = return_data_treated,
+                                             get_data_from_local = FALSE
+        )
+      }
+
+      if(!(compare_dates(as.character(farest_end_date), d_format, end_date_format_conversion, d_format)>=0)){
+        data_backup_treated = get_solar_data(type_data = type_data, datapath = datapath,
+                                             start_date = substr(farest_end_date, start = 1, stop = 10),
+                                             end_date = substr(end_date_format_conversion, start = 1, stop = 10),
+                                             return_data_treated = return_data_treated,
+                                             get_data_from_local = FALSE
+        )
+      }
     }
 
     # Returning the data in the period specified
@@ -357,6 +439,12 @@ get_solar_data <- function(type_data,
                          stringsAsFactors=FALSE)
 
         for(i in 1:length(data_server)){
+          # Checking that the index is right
+          if(length(data_server)==0){
+            break # no data
+          }
+
+          # Filtering the data of the row
           row_data <- unlist(strsplit(data_server[i],
                                       split="lat=|lon=|rad=|vel=|#|-CME-01|-CME-001|-CME-002|-CME-003"))
           row_data[6] <- substr(row_data[6], start = 1, stop = nchar(row_data[6])-3)
@@ -382,6 +470,26 @@ get_solar_data <- function(type_data,
 
     # Saving the data
     if (!is.null(data_server_treated_joined_to_data_backup)) {
+      # We will add two columns to the data for knowing which are
+      # the farest start and end date:
+      # One column for the farest start date
+      if(!is.null(farest_start_date)){
+        data_server_treated_joined_to_data_backup[1, new_column_name_farest_start_date] = ifelse(compare_dates(as.character(farest_start_date), d_format, start_date_format_conversion, d_format)>=0
+                                                                                                 ,start_date_format_conversion, farest_start_date)
+      }else{
+        data_server_treated_joined_to_data_backup[1, new_column_name_farest_start_date] = start_date_format_conversion
+      }
+
+      # One column for the farest end date
+      if(!is.null(farest_end_date)){
+        data_server_treated_joined_to_data_backup[1, new_column_name_farest_end_date] = ifelse(compare_dates(as.character(farest_end_date), d_format, end_date_format_conversion, d_format)>=0
+                                                                                               , farest_end_date, end_date_format_conversion)
+      }else{
+        data_server_treated_joined_to_data_backup[1, new_column_name_farest_end_date] = end_date_format_conversion
+      }
+
+
+      # Saving the data
       write.csv2(x = data_server_treated_joined_to_data_backup,
                  file = filepath,
                  row.names = FALSE)
@@ -452,6 +560,12 @@ compare_dates <- function(dates1, start_date_format, dates2, end_date_format) {
 
   # Comparing dates
   for(i in 1:length(dates1)){
+    # Checking that the index is right
+    if(length(dates1)==0){
+      break # no data
+    }
+
+    # Getting the dates
     start_date = dates1[i]
     end_date = dates2[i]
 
