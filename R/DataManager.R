@@ -54,9 +54,9 @@ treating_cme_raw_data <- function(data) {
     }
 
     # 2- Treating data (when lat or lon are null, the entire row will be removed for the sake of data)
-    if(stri_detect_fixed(data[row_index, "lat"],c("null"))
-       || stri_detect_fixed(data[row_index, "lon"],c("null"))){
-      remove_rows[counter] <- -row_index
+    if(stri_detect_fixed(data[row_index, "lat"], c("null"))
+       || stri_detect_fixed(data[row_index, "lon"], c("null"))){
+      remove_rows[counter] <- (-row_index)
       counter <- counter + 1
       data[row_index, new_column_source_location] = ""
       next
@@ -71,12 +71,14 @@ treating_cme_raw_data <- function(data) {
     lon = ifelse(lon>0, paste("E", lon, sep = ""), paste("W", abs(lon), sep = ""))
 
     # 1- Saving helio-location
-    data[row_index, new_column_source_location] = paste(lat, lon, sep = "")
+    aux_source_location = as.character(paste(lat, lon, sep = ""))
+    data[row_index, new_column_source_location] <- aux_source_location
   }
 
   # Removing rows that didn't pass the screen
-  data <- data[remove_rows,]
-
+  if(length(remove_rows)>0){
+    data <- data[remove_rows,]
+  }
 
   return (data)
 }
@@ -286,7 +288,9 @@ get_solar_data <- function(type_data,
   } else{
     return (NULL)
   }
-  print(URL)
+
+  # Debugging
+  # print(URL)
 
   # Checking data issues
   if (!get_data_from_local) { # Checking if there is some data in URL specified
@@ -295,7 +299,7 @@ get_solar_data <- function(type_data,
 
     # Getting backup
     if(file.exists(filepath)){
-      data_backup = read.csv2(filepath)
+      data_backup = read.csv2(filepath, stringsAsFactors = FALSE)
     }else{
       data_backup = NULL
     }
@@ -307,7 +311,7 @@ get_solar_data <- function(type_data,
   } else if (get_data_from_local && !file.exists(filepath)) { # no file exist
     return (NULL)
   } else if (get_data_from_local && file.exists(filepath)) { # everything right
-    data_backup = read.csv2(filepath)
+    data_backup = read.csv2(filepath, stringsAsFactors = FALSE)
   } else{
     stop("Something went wrong in DataManager.R. It is related to data backups.")
     return (NULL)
@@ -518,14 +522,17 @@ get_solar_data <- function(type_data,
 #' @examples
 #' d_format <- "%Y-%m-%dT%H:%MZ"
 #' start_date = "2010-11-21T00:00Z"
+#' start_date_format = "%Y-%m-%dT%H:%MZ"
 #' end_date = "2010-11-21T02:00Z"
+#' end_date_format = "%Y-%m-%dT%H:%MZ"
+#' units = "hours", "mins", "secs"
 #' print(time_difference(start_date = start_date, start_date_format = d_format,
 #'                           end_date = end_date, end_date_format = d_format,
 #'                           units = "mins"))
+#'  units = "hours", "mins", "secs"
 time_difference <-
   function(start_date, start_date_format, end_date, end_date_format, units) {
-    td <-
-      as.numeric(strptime(start_date, start_date_format) - strptime(end_date, end_date_format), units = units)
+    td <- as.numeric(strptime(start_date, start_date_format) - strptime(end_date, end_date_format), units = units)
     return (td)
   }
 

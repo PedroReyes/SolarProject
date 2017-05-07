@@ -2,17 +2,18 @@
 # ====================TESTING=================
 # ============================================
 if(FALSE){
-  library(SolarProject)
+  # library(SolarProject)
+  source(paste(getwd(), "/R/DataManager.R", sep = ""))
   print(getwd())
   print(paste(getwd(), "/Data/", sep = ""))
   solar_data = get_solar_data(
-    type_data = data_types.IPS,
+    type_data = data_types.CME,
     # datapath = "/Users/pedro/Google Drive/Desarrollo/ResearchBook/Solar_Dashboard/SolarProject/Data/",
     datapath = paste(getwd(), "/Data/", sep = ""),
-    start_date = "2017-01-01",
-    end_date = "2017-06-01",
+    start_date = "2010-01-01",
+    end_date = "2017-01-01",
     return_data_treated = TRUE,
-    get_data_from_local = FALSE
+    get_data_from_local = TRUE
   )
   print(solar_data)
 }
