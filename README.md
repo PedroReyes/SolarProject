@@ -9,6 +9,7 @@ After following the tutorial I just installed the package in RStudio using the n
 * install.packages("devtools") 
 * library(devtools)
 * install_github('SolarProject','PedroReyes')
+* another option is to use: install_github('PedroReyes/SolarProject')
 
 If any change is introduced into the code of the package the next commands must be followed:
 
